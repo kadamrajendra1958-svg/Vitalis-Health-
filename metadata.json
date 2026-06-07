@@ -1,0 +1,12 @@
+{
+  "name": "Vitalis Health UI",
+  "description": "Healthcare dashboard and AI assistant.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
