@@ -16,7 +16,8 @@ import {
   MessageSquare,
   Bookmark,
   TrendingUp,
-  Brain
+  Brain,
+  Stethoscope
 } from 'lucide-react';
 import * as motion from 'motion/react-client';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -117,6 +118,80 @@ export default function Dashboard() {
           <div className="h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
           <div className="lg:col-span-2 h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
         </div>
+      </motion.div>
+    );
+  }
+
+  if (journeys.length === 0) {
+    return (
+      <motion.div 
+        variants={STAGGER_CONTAINER}
+        initial="hidden"
+        animate="show"
+        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12"
+      >
+        <div className="text-center space-y-6 max-w-2xl mx-auto">
+          <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+             <HeartPulse className="h-10 w-10" />
+          </motion.div>
+          <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-4xl font-bold tracking-tight text-slate-900">
+            Welcome to CareSync
+          </motion.h1>
+          <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg text-slate-600">
+            Your personal healthcare companion. Let&apos;s start by understanding your health needs and creating a personalized care plan.
+          </motion.p>
+          <motion.div variants={FADE_UP_ANIMATION_VARIANTS}>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-lg px-8 py-6 h-auto active:scale-[0.98] transition-all shadow-md mt-4">
+               <Activity className="h-6 w-6 mr-3" />
+               Start New Health Assessment
+            </Button>
+          </motion.div>
+        </div>
+
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="grid md:grid-cols-3 gap-6 mt-12">
+          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+             <CardContent className="p-6">
+                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                  <Brain className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Understand Symptoms</h3>
+                <p className="text-slate-500 text-sm">Use our AI assistant to understand what you&apos;re experiencing before visiting a doctor.</p>
+             </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+             <CardContent className="p-6">
+                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                  <Stethoscope className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Find Specialists</h3>
+                <p className="text-slate-500 text-sm">Get matched with the right healthcare professionals based on your specific needs.</p>
+             </CardContent>
+          </Card>
+          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+             <CardContent className="p-6">
+                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Plan Treatment Journey</h3>
+                <p className="text-slate-500 text-sm">Track your progress, appointments, and recovery milestones in one place.</p>
+             </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="mt-12">
+          <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Activity</h2>
+          <Card className="border-slate-200/60 shadow-sm rounded-2xl overflow-hidden bg-slate-50/50">
+            <CardContent className="p-12 text-center flex flex-col items-center justify-center">
+               <div className="h-24 w-24 bg-white shadow-sm rounded-full flex items-center justify-center mb-6">
+                 <Activity className="h-12 w-12 text-blue-200" />
+               </div>
+               <h3 className="text-lg font-semibold text-slate-700 mb-2">No activity yet</h3>
+               <p className="text-slate-500 max-w-md mx-auto">
+                 Your recent health assessments, appointments, and journey milestones will appear here.
+               </p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </motion.div>
     );
   }

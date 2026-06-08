@@ -16,7 +16,9 @@ import {
   Clock,
   ChevronRight,
   ArrowRight,
-  Plus
+  Plus,
+  HeartPulse,
+  AlertCircle
 } from 'lucide-react';
 import * as motion from 'motion/react-client';
 import { useAuth } from '@/lib/AuthContext';
@@ -51,11 +53,18 @@ export default function JourneyTimeline() {
   const [steps, setSteps] = useState<any[]>([]);
   const [activeStepId, setActiveStepId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   useEffect(() => {
     if (!user) return;
+    
+    let isUnmounted = false;
+    setIsLoading(true);
+    
     const q = query(collection(db, 'users', user.uid, 'journeySteps'), orderBy('order', 'asc'));
     const unsub = onSnapshot(q, (snap) => {
+      if (isUnmounted) return;
       const dbSteps = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setSteps(dbSteps);
       if (dbSteps.length > 0) {
@@ -63,16 +72,31 @@ export default function JourneyTimeline() {
         setActiveStepId(prev => prev || currentStep?.id);
       }
       setIsLoading(false);
+    }, (err) => {
+      if (isUnmounted) return;
+      console.error(err);
+      setIsError(true);
+      setIsLoading(false);
     });
 
-    return () => unsub();
+    const timer = setTimeout(() => {
+      if (!isUnmounted) {
+        setIsLoading(false);
+      }
+    }, 3000);
+
+    return () => {
+      isUnmounted = true;
+      unsub();
+      clearTimeout(timer);
+    };
   }, [user]);
 
   const activeStep = steps.find(s => s.id === activeStepId) || steps[0];
 
   const initializeJourney = async () => {
     if (!user) return;
-    setIsLoading(true);
+    setIsInitializing(true);
     const initialSteps = [
       {
         order: 1,
@@ -115,8 +139,9 @@ export default function JourneyTimeline() {
       });
     } catch (e) {
       console.error(e);
+      setIsError(true);
     }
-    setIsLoading(false);
+    setIsInitializing(false);
   };
 
   if (isLoading) {
@@ -142,16 +167,42 @@ export default function JourneyTimeline() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] px-4">
+        <div className="h-16 w-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
+          <AlertCircle className="h-8 w-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Something went wrong</h2>
+        <p className="text-slate-500 mb-6 text-center max-w-sm">We ran into an issue loading your medical journey. Please try refreshing.</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">
+          Refresh Page
+        </Button>
+      </div>
+    );
+  }
+
   if (steps.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-        <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Activity className="h-8 w-8" />
+        <div className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+          <HeartPulse className="h-10 w-10" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">No Active Journeys</h2>
-        <p className="text-slate-500 mb-6 max-w-md mx-auto">You haven&apos;t started tracking any medical journeys yet. Let&apos;s create one to keep everything organized.</p>
-        <Button onClick={initializeJourney} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-[0.98] transition-transform">
-           <Plus className="h-4 w-4 mr-2" /> Start New Journey
+        <h2 className="text-3xl font-bold text-slate-900 mb-3">Start your first medical journey</h2>
+        <p className="text-slate-500 mb-8 max-w-md mx-auto text-lg hover:text-slate-800 transition-colors">
+          Track your progress from symptoms to full recovery in one organized timeline.
+        </p>
+        <Button 
+          onClick={initializeJourney} 
+          disabled={isInitializing}
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-[0.98] transition-all px-8 py-6 text-lg shadow-md"
+        >
+           {isInitializing ? (
+             <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+           ) : (
+             <Plus className="h-6 w-6 mr-3" />
+           )}
+           {isInitializing ? 'Creating...' : 'Create Journey'}
         </Button>
       </div>
     );
