@@ -20,14 +20,16 @@ import {
   Stethoscope
 } from 'lucide-react';
 import * as motion from 'motion/react-client';
+import { AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/lib/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { AnimatedNumber } from '@/components/AnimatedNumber';
 
 const FADE_UP_ANIMATION_VARIANTS = {
   hidden: { opacity: 0, y: 15 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, bounce: 0.3, duration: 0.8 } },
+  show: { opacity: 1, y: 0, transition: { type: 'tween' as const, ease: 'easeOut', duration: 0.4 } },
 };
 
 const STAGGER_CONTAINER = {
@@ -99,123 +101,152 @@ export default function Dashboard() {
     };
   }, [user]);
 
-  if (isLoading) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 mt-4"
-      >
-        <div className="flex items-center gap-4 mb-8">
-           <div className="h-10 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 h-[280px] bg-slate-200/60 rounded-2xl animate-pulse" />
-          <div className="h-[280px] bg-slate-200/60 rounded-2xl animate-pulse" />
-          <div className="lg:col-span-2 h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
-          <div className="h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
-          <div className="h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
-          <div className="lg:col-span-2 h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (journeys.length === 0) {
-    return (
-      <motion.div 
-        variants={STAGGER_CONTAINER}
-        initial="hidden"
-        animate="show"
-        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12 space-y-8 md:space-y-12"
-      >
-        <div className="text-center space-y-6 max-w-2xl mx-auto">
-          <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-             <HeartPulse className="h-10 w-10" />
-          </motion.div>
-          <motion.h1 variants={FADE_UP_ANIMATION_VARIANTS} className="text-4xl font-bold tracking-tight text-slate-900">
-            Welcome to CareSync
-          </motion.h1>
-          <motion.p variants={FADE_UP_ANIMATION_VARIANTS} className="text-lg text-slate-600">
-            Your personal healthcare companion. Let&apos;s start by understanding your health needs and creating a personalized care plan.
-          </motion.p>
-          <motion.div variants={FADE_UP_ANIMATION_VARIANTS}>
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-lg px-8 py-6 h-auto active:scale-[0.98] transition-all shadow-md mt-4">
-               <Activity className="h-6 w-6 mr-3" />
-               Start New Health Assessment
-            </Button>
-          </motion.div>
-        </div>
-
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="grid md:grid-cols-3 gap-6 mt-12">
-          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
-             <CardContent className="p-6">
-                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <Brain className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Understand Symptoms</h3>
-                <p className="text-slate-500 text-sm">Use our AI assistant to understand what you&apos;re experiencing before visiting a doctor.</p>
-             </CardContent>
-          </Card>
-          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
-             <CardContent className="p-6">
-                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <Stethoscope className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Find Specialists</h3>
-                <p className="text-slate-500 text-sm">Get matched with the right healthcare professionals based on your specific needs.</p>
-             </CardContent>
-          </Card>
-          <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
-             <CardContent className="p-6">
-                <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <TrendingUp className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Plan Treatment Journey</h3>
-                <p className="text-slate-500 text-sm">Track your progress, appointments, and recovery milestones in one place.</p>
-             </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="mt-12">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Activity</h2>
-          <Card className="border-slate-200/60 shadow-sm rounded-2xl overflow-hidden bg-slate-50/50">
-            <CardContent className="p-12 text-center flex flex-col items-center justify-center">
-               <div className="h-24 w-24 bg-white shadow-sm rounded-full flex items-center justify-center mb-6">
-                 <Activity className="h-12 w-12 text-blue-200" />
-               </div>
-               <h3 className="text-lg font-semibold text-slate-700 mb-2">No activity yet</h3>
-               <p className="text-slate-500 max-w-md mx-auto">
-                 Your recent health assessments, appointments, and journey milestones will appear here.
-               </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-    );
-  }
-
   return (
-    <motion.div 
-      variants={STAGGER_CONTAINER}
-      initial="hidden"
-      animate="show"
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8"
-    >
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Healthcare Dashboard</h1>
-          <p className="text-slate-500 mt-1">Overview of your medical tracking and appointments.</p>
+    <AnimatePresence mode="wait">
+      {isLoading ? (
+        <motion.div 
+          key="skeleton"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-8 mt-4"
+        >
+          <div className="flex items-center gap-4 mb-8">
+             <div className="h-10 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-[280px] bg-slate-200/60 rounded-2xl animate-pulse" />
+            <div className="h-[280px] bg-slate-200/60 rounded-2xl animate-pulse" />
+            <div className="lg:col-span-2 h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
+            <div className="h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
+            <div className="h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
+            <div className="lg:col-span-2 h-[240px] bg-slate-200/60 rounded-2xl animate-pulse" />
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div 
+          key="content"
+          variants={STAGGER_CONTAINER}
+          initial="hidden"
+          animate="show"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10 space-y-8"
+        >
+      {/* PREMIUM HERO SECTION */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-900 to-teal-900 text-white shadow-xl shadow-blue-900/10 border border-slate-800">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div 
+             animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }} 
+             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute -top-[20%] -right-[10%] w-[60%] h-[120%] bg-teal-500 opacity-20 blur-[100px] rounded-full" 
+          />
+          <motion.div 
+             animate={{ opacity: [0.2, 0.4, 0.2], scale: [1.1, 1, 1.1] }} 
+             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+             className="absolute -bottom-[20%] -left-[10%] w-[50%] h-[100%] bg-blue-500 opacity-20 blur-[120px] rounded-full" 
+          />
         </div>
-        <div className="flex items-center gap-4">
-          <Avatar className="h-12 w-12 border border-slate-200 shadow-sm">
-            <AvatarFallback className="bg-blue-600 text-white font-medium">{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
-          </Avatar>
+
+        <div className="relative z-10 px-6 sm:px-10 lg:px-12 py-10 sm:py-16 flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12">
+          <div className="flex-1 space-y-4 md:space-y-6 text-center md:text-left">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-teal-100 text-sm font-medium backdrop-blur-md shadow-sm">
+               Good morning, <span className="font-bold text-white truncate max-w-[120px] inline-block align-bottom">{user?.email?.split('@')[0] || 'User'}</span>
+            </motion.div>
+            
+            <motion.h1 initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
+              Your Healthcare <br className="hidden sm:block" /> Journey Companion
+            </motion.h1>
+            
+            <motion.p initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-teal-50/80 text-base sm:text-lg max-w-xl mx-auto md:mx-0 font-medium">
+              Get guidance from symptoms to recovery.
+            </motion.p>
+            
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start">
+               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                 <Button size="lg" className="bg-teal-500 hover:bg-teal-400 text-teal-950 font-bold rounded-xl text-base px-6 py-6 h-auto transition-all w-full sm:w-auto shadow-lg shadow-teal-900/20">
+                   Start New Assessment
+                 </Button>
+               </motion.div>
+               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                 <Button size="lg" variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10 hover:border-white/30 rounded-xl text-base px-6 py-6 h-auto transition-all w-full sm:w-auto backdrop-blur-md">
+                   Find Specialists
+                 </Button>
+               </motion.div>
+            </motion.div>
+          </div>
+
+          <motion.div 
+             initial={{ opacity: 0, scale: 0.9 }} 
+             animate={{ opacity: 1, scale: 1 }} 
+             transition={{ delay: 0.2, type: "spring", bounce: 0.4 }}
+             className="relative hidden sm:flex justify-center items-center shrink-0 w-64 h-64 lg:w-80 lg:h-80"
+          >
+            <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-[60px] animate-pulse" />
+            <div className="relative z-10 w-full h-full bg-white/5 border border-white/10 rounded-full flex flex-col items-center justify-center backdrop-blur-md shadow-2xl space-y-6">
+               <div className="absolute inset-4 border border-white/10 rounded-full" />
+               <div className="absolute inset-8 border border-white/5 rounded-full" />
+               <HeartPulse className="w-20 h-20 text-teal-300 drop-shadow-[0_0_15px_rgba(45,212,191,0.5)]" />
+               <div className="flex gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-blue-500/20 text-blue-300 flex items-center justify-center border border-blue-400/20 backdrop-blur-md">
+                     <Brain className="w-6 h-6" />
+                  </div>
+                  <div className="h-12 w-12 rounded-2xl bg-teal-500/20 text-teal-300 flex items-center justify-center border border-teal-400/20 backdrop-blur-md">
+                     <TrendingUp className="w-6 h-6" />
+                  </div>
+               </div>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {journeys.length === 0 ? (
+        <div className="space-y-8">
+          <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="grid md:grid-cols-3 gap-6">
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+               <CardContent className="p-6">
+                  <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                    <Brain className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Understand Symptoms</h3>
+                  <p className="text-slate-500 text-sm">Use our AI assistant to understand what you&apos;re experiencing before visiting a doctor.</p>
+               </CardContent>
+            </Card>
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+               <CardContent className="p-6">
+                  <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                    <Stethoscope className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Find Specialists</h3>
+                  <p className="text-slate-500 text-sm">Get matched with the right healthcare professionals based on your specific needs.</p>
+               </CardContent>
+            </Card>
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md transition-all hover:border-blue-200 cursor-default bg-white">
+               <CardContent className="p-6">
+                  <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Plan Treatment Journey</h3>
+                  <p className="text-slate-500 text-sm">Track your progress, appointments, and recovery milestones in one place.</p>
+               </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={FADE_UP_ANIMATION_VARIANTS}>
+            <h2 className="text-xl font-bold text-slate-900 mb-6 px-1">Recent Activity</h2>
+            <Card className="border-slate-200/60 shadow-sm rounded-2xl overflow-hidden bg-slate-50/50">
+              <CardContent className="p-12 text-center flex flex-col items-center justify-center">
+                 <div className="h-24 w-24 bg-white shadow-sm rounded-full flex items-center justify-center mb-6 border border-slate-100">
+                   <Activity className="h-12 w-12 text-blue-200" />
+                 </div>
+                 <h3 className="text-lg font-semibold text-slate-700 mb-2">No activity yet</h3>
+                 <p className="text-slate-500 max-w-sm mx-auto">
+                   Your recent health assessments, appointments, and journey milestones will appear here.
+                 </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="lg:col-span-2">
           <Card className="h-full border-slate-200/60 shadow-sm rounded-2xl hover:shadow-md hover:-translate-y-1 transition-all duration-300">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -309,10 +340,10 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                          <div className="flex justify-between items-end mb-2 mt-1">
                             <h4 className="font-semibold text-slate-900 text-sm truncate pr-4 group-hover:text-blue-600 transition-colors">{journey.title}</h4>
-                            <span className="text-xs font-semibold text-slate-700">{journey.progress || 0}%</span>
+                            <span className="text-xs font-semibold text-slate-700"><AnimatedNumber value={journey.progress || 0} />%</span>
                          </div>
                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${journey.progress || 0}%` }} />
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${journey.progress || 0}%` }} transition={{ duration: 0.5, ease: "easeOut" }} className="h-full bg-blue-500 rounded-full" />
                          </div>
                          <div className="text-xs text-slate-500 mt-2">Started {new Date(journey.createdAt).toLocaleDateString()}</div>
                       </div>
@@ -406,6 +437,9 @@ export default function Dashboard() {
            </Card>
         </motion.div>
       </div>
+     )}
     </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

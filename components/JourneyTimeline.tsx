@@ -36,7 +36,7 @@ const CONTAINER_VARIANTS = {
 
 const ITEM_VARIANTS = {
   hidden: { opacity: 0, x: -20 },
-  show: { opacity: 1, x: 0, transition: { type: 'spring', bounce: 0.3, duration: 0.8 } },
+  show: { opacity: 1, x: 0, transition: { type: 'tween', ease: 'easeOut', duration: 0.4 } },
 };
 
 const iconMap: any = {
@@ -144,32 +144,30 @@ export default function JourneyTimeline() {
     setIsInitializing(false);
   };
 
-  if (isLoading) {
-    return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12"
-      >
-        <div className="mb-8 h-10 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <div className="flex-1 lg:max-w-xl space-y-6">
-             <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
-             <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
-             <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
+  return (
+    <AnimatePresence mode="wait">
+      {isLoading ? (
+        <motion.div 
+          key="skeleton"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.2 } }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12"
+        >
+          <div className="mb-8 h-10 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
+          <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+            <div className="flex-1 lg:max-w-xl space-y-6">
+               <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
+               <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
+               <div className="h-24 w-full bg-slate-200/60 rounded-2xl animate-pulse" />
+            </div>
+            <div className="flex-1">
+               <div className="h-[400px] w-full bg-slate-200/60 rounded-3xl animate-pulse" />
+            </div>
           </div>
-          <div className="flex-1">
-             <div className="h-[400px] w-full bg-slate-200/60 rounded-3xl animate-pulse" />
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] px-4">
+        </motion.div>
+      ) : isError ? (
+      <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center min-h-[50vh] px-4">
         <div className="h-16 w-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
           <AlertCircle className="h-8 w-8" />
         </div>
@@ -178,13 +176,9 @@ export default function JourneyTimeline() {
         <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">
           Refresh Page
         </Button>
-      </div>
-    );
-  }
-
-  if (steps.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 text-center">
+      </motion.div>
+      ) : steps.length === 0 ? (
+      <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto px-4 py-12 md:py-24 text-center">
         <div className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
           <HeartPulse className="h-10 w-10" />
         </div>
@@ -192,24 +186,23 @@ export default function JourneyTimeline() {
         <p className="text-slate-500 mb-8 max-w-md mx-auto text-lg hover:text-slate-800 transition-colors">
           Track your progress from symptoms to full recovery in one organized timeline.
         </p>
-        <Button 
-          onClick={initializeJourney} 
-          disabled={isInitializing}
-          className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl active:scale-[0.98] transition-all px-8 py-6 text-lg shadow-md"
-        >
-           {isInitializing ? (
-             <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
-           ) : (
-             <Plus className="h-6 w-6 mr-3" />
-           )}
-           {isInitializing ? 'Creating...' : 'Create Journey'}
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button 
+            onClick={initializeJourney} 
+            disabled={isInitializing}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all px-8 py-6 text-lg shadow-md"
+          >
+             {isInitializing ? (
+               <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3" />
+             ) : (
+               <Plus className="h-6 w-6 mr-3" />
+             )}
+             {isInitializing ? 'Creating...' : 'Create Journey'}
+          </Button>
+        </motion.div>
+      </motion.div>
+      ) : (
+    <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Treatment Journey</h1>
@@ -405,6 +398,8 @@ export default function JourneyTimeline() {
           </div>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
+    )}
+    </AnimatePresence>
   );
 }
