@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   Activity, 
   Stethoscope, 
@@ -18,7 +19,8 @@ import {
   ArrowRight,
   Plus,
   HeartPulse,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import * as motion from 'motion/react-client';
 import { useAuth } from '@/lib/AuthContext';
@@ -55,6 +57,13 @@ export default function JourneyTimeline() {
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [isAddingNewStep, setIsAddingNewStep] = useState(false);
+  const [newStepForm, setNewStepForm] = useState({
+    title: '',
+    description: '',
+    details: '',
+    iconName: 'Activity',
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +78,11 @@ export default function JourneyTimeline() {
       setSteps(dbSteps);
       if (dbSteps.length > 0) {
         const currentStep = dbSteps.find(s => s.status === 'current') || dbSteps[dbSteps.length - 1];
-        setActiveStepId(prev => prev || currentStep?.id);
+        setActiveStepId(prev => {
+          if (!prev) return currentStep?.id;
+          if (!dbSteps.find(s => s.id === prev)) return currentStep?.id;
+          return prev;
+        });
       }
       setIsLoading(false);
     }, (err) => {
@@ -144,6 +157,54 @@ export default function JourneyTimeline() {
     setIsInitializing(false);
   };
 
+  const handleCreateStep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !newStepForm.title) return;
+    
+    setIsInitializing(true);
+    const nextOrder = steps.length > 0 ? Math.max(...steps.map(s => s.order)) + 1 : 1;
+    
+    try {
+      await addDoc(collection(db, 'users', user.uid, 'journeySteps'), {
+        order: nextOrder,
+        title: newStepForm.title,
+        description: newStepForm.description,
+        iconName: newStepForm.iconName,
+        status: 'pending',
+        date: 'Upcoming',
+        details: newStepForm.details || 'To be determined.'
+      });
+      setIsAddingNewStep(false);
+      setNewStepForm({ title: '', description: '', details: '', iconName: 'Activity' });
+    } catch (error) {
+      console.error("Error adding step: ", error);
+    }
+    setIsInitializing(false);
+  };
+
+  const markStepAsCompleted = async (stepId: string) => {
+    if (!user) return;
+    try {
+      const stepRef = doc(db, 'users', user.uid, 'journeySteps', stepId);
+      await setDoc(stepRef, { 
+        status: 'completed',
+        date: new Date().toLocaleDateString()
+      }, { merge: true });
+      
+      const currentStep = steps.find(s => s.id === stepId);
+      if (currentStep) {
+        const nextStep = steps.find(s => s.order > currentStep.order && s.status === 'pending');
+        if (nextStep) {
+          const nextStepRef = doc(db, 'users', user.uid, 'journeySteps', nextStep.id);
+          await setDoc(nextStepRef, { status: 'current' }, { merge: true });
+          setActiveStepId(nextStep.id);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <AnimatePresence mode="wait">
       {isLoading ? (
@@ -208,9 +269,15 @@ export default function JourneyTimeline() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Treatment Journey</h1>
           <p className="text-slate-500 mt-1">Track your progress from symptoms to full recovery.</p>
         </div>
-        <Badge variant="outline" className="w-fit text-blue-700 bg-blue-50 border-blue-200 px-3 py-1 text-sm font-medium">
-          Active Case
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="text-blue-700 bg-blue-50 border-blue-200 px-3 py-1 text-sm font-medium">
+            Active Case
+          </Badge>
+          <Button onClick={() => setIsAddingNewStep(true)} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Milestone
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
@@ -230,7 +297,7 @@ export default function JourneyTimeline() {
                 const isCompleted = step.status === 'completed';
                 const isCurrent = step.status === 'current';
                 const isPending = step.status === 'pending';
-                const isActive = activeStepId === step.id;
+                const isActive = activeStepId === step.id && !isAddingNewStep;
 
                 const IconComponent = iconMap[step.iconName] || Activity;
                 let strokeColor = "text-slate-400";
@@ -268,7 +335,10 @@ export default function JourneyTimeline() {
 
                     {/* Content Card */}
                     <div 
-                      onClick={() => setActiveStepId(step.id)}
+                      onClick={() => {
+                        setActiveStepId(step.id);
+                        setIsAddingNewStep(false);
+                      }}
                       className={`flex-1 rounded-2xl p-4 md:p-5 border transition-all cursor-pointer ${
                         isActive 
                           ? 'border-blue-500 bg-blue-50/30 shadow-sm' 
@@ -323,7 +393,18 @@ export default function JourneyTimeline() {
                   <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#3b82f6 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                   
                   <AnimatePresence mode="wait">
-                    {activeStep && (
+                    {isAddingNewStep ? (
+                       <motion.div
+                         key="add-icon"
+                         initial={{ scale: 0.8, opacity: 0 }}
+                         animate={{ scale: 1, opacity: 1 }}
+                         exit={{ scale: 0.8, opacity: 0 }}
+                         transition={{ type: 'spring', bounce: 0.4 }}
+                         className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-sm z-10 bg-blue-100 text-blue-600"
+                       >
+                         <Plus className="h-8 w-8" />
+                       </motion.div>
+                    ) : activeStep && (
                        <motion.div
                          key={activeStep.id}
                          initial={{ scale: 0.8, opacity: 0 }}
@@ -347,7 +428,54 @@ export default function JourneyTimeline() {
                
                <CardContent className="p-6 md:p-8">
                  <AnimatePresence mode="wait">
-                   {activeStep && (
+                   {isAddingNewStep ? (
+                     <motion.div
+                       key="add-form"
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       exit={{ opacity: 0, y: -10 }}
+                       transition={{ duration: 0.3 }}
+                     >
+                       <div className="flex justify-between items-center mb-4">
+                         <h2 className="text-2xl font-bold text-slate-900">New Milestone</h2>
+                         <Button variant="ghost" size="icon" onClick={() => setIsAddingNewStep(false)}>
+                           <X className="h-5 w-5 text-slate-500" />
+                         </Button>
+                       </div>
+                       <form onSubmit={handleCreateStep} className="space-y-4">
+                         <div>
+                           <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                           <Input 
+                             value={newStepForm.title} 
+                             onChange={(e) => setNewStepForm(prev => ({ ...prev, title: e.target.value }))} 
+                             placeholder="E.g., Follow-up Appointment" 
+                             required 
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                           <Input 
+                             value={newStepForm.description} 
+                             onChange={(e) => setNewStepForm(prev => ({ ...prev, description: e.target.value }))} 
+                             placeholder="Brief description of the milestone" 
+                             required 
+                           />
+                         </div>
+                         <div>
+                           <label className="block text-sm font-medium text-slate-700 mb-1">Details (Optional)</label>
+                           <textarea 
+                             value={newStepForm.details} 
+                             onChange={(e) => setNewStepForm(prev => ({ ...prev, details: e.target.value }))} 
+                             className="w-full flex min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                             placeholder="Full details, notes, or instructions" 
+                           />
+                         </div>
+                         <Button type="submit" disabled={isInitializing} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg active:scale-[0.98] transition-transform">
+                           {isInitializing ? 'Saving...' : 'Save Milestone'}
+                         </Button>
+                       </form>
+                     </motion.div>
+                   ) : activeStep && (
                      <motion.div
                        key={`content-${activeStep.id}`}
                        initial={{ opacity: 0, y: 10 }}
@@ -378,14 +506,14 @@ export default function JourneyTimeline() {
                          {activeStep.details}
                        </p>
                        
-                       {activeStep.status === 'current' && (
+                       {(activeStep.status === 'current' || activeStep.status === 'pending') && (
                          <div className="mt-8 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
                             <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                               <Activity className="h-4 w-4" /> Action Required
                             </h4>
-                            <p className="text-sm text-blue-800 mb-4">Please note any new symptoms and follow up with your provider regarding next steps.</p>
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg active:scale-[0.98] transition-transform">
-                               Acknowledge
+                            <p className="text-sm text-blue-800 mb-4">You can mark this milestone as completed to progress your journey timeline.</p>
+                            <Button onClick={() => markStepAsCompleted(activeStep.id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg active:scale-[0.98] transition-transform">
+                               Mark as Completed
                             </Button>
                          </div>
                        )}
