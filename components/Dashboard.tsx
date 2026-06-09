@@ -128,7 +128,7 @@ export default function Dashboard() {
         variants={STAGGER_CONTAINER}
         initial="hidden"
         animate="show"
-        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12"
+        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12 space-y-8 md:space-y-12"
       >
         <div className="text-center space-y-6 max-w-2xl mx-auto">
           <motion.div variants={FADE_UP_ANIMATION_VARIANTS} className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">

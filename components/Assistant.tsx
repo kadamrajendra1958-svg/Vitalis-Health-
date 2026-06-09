@@ -121,7 +121,7 @@ export default function Assistant() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100dvh-5rem)] max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
       <Card className="flex-1 flex flex-col bg-white border-slate-200/60 shadow-sm overflow-hidden rounded-3xl relative">
         <div className="h-16 border-b border-slate-100 flex items-center px-6 shrink-0 bg-white/50 backdrop-blur-sm z-10 sticky top-0">
           <div className="flex items-center gap-3">

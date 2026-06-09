@@ -184,7 +184,7 @@ export default function JourneyTimeline() {
 
   if (steps.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
+      <div className="max-w-7xl mx-auto px-4 py-12 md:py-24 text-center">
         <div className="h-20 w-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
           <HeartPulse className="h-10 w-10" />
         </div>
